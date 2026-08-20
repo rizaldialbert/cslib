@@ -19,7 +19,7 @@ inductive Formula (Label : Type u) : Type u where
   /-- next -/
   | next (φ : Formula Label)
   /-- next witha action label -/
-  | next_act (φ : Formula Label)
+  | next_act (a : Label) (φ : Formula Label)
 
 instance : Top (Formula Label) := ⟨.true⟩
 instance : HasAnd (Formula Label) := ⟨.and⟩
