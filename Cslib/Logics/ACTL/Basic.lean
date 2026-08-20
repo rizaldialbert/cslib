@@ -39,6 +39,9 @@ def Formula.or (φ₁ φ₂ : Formula Label) : Formula Label := ¬(¬φ₁ ∧ �
 
 instance : HasOr (Formula Label) := ⟨.or⟩
 
+lemma Formula.or_eq {φ1 φ2 : Formula Label} :
+  (φ1 ∨ φ2) = Formula.or φ1 φ2 := rfl
+
 def Formula.imp (φ₁ φ₂ : Formula Label) : Formula Label := (¬φ₁ ∨ ¬φ₂)
 
 instance : HasImp (Formula Label) := ⟨.imp⟩
@@ -66,13 +69,49 @@ def Satisfies {lts : LTS State Label}
   | .next φ => Satisfies (ρ.drop 1) φ
   | .next_act a φ => μs 0 = a ∧ Satisfies (ρ.drop 1) φ
 
+section Satisfies
+
+variable {ss : ωSequence State} {μs : ωSequence Label} {lts : LTS State Label} {ρ : OmegaExecution lts ss μs}
+
+theorem Satisfies.true :
+  Satisfies ρ Formula.true := trivial
+
+theorem Satisfies.and_iff :
+  Satisfies ρ φ₁ ∧ Satisfies ρ φ₂ ↔ Satisfies ρ (φ₁ ∧ φ₂) := by
+  constructor
+  · tauto
+  · intro h
+    induction h
+    (expose_names; exact ⟨left, right⟩)
+
+theorem Satisfies.not_iff :
+  ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by tauto
+
+theorem Satisfies.or (h : Satisfies ρ φ₁ ∨  Satisfies ρ φ₂):
+  Satisfies ρ (φ₁ ∨  φ₂) := by
+  rw [or_eq, Formula.or, ← Satisfies.not_iff, ← Satisfies.and_iff]
+  tauto
+
 def Valid (lts : LTS State Label) (φ : Formula Label) : Prop :=
   ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ
+
+lemma Valid.iff :
+  Valid lts φ ↔ ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ := by rfl
 
 lemma bisimulation_preserves_actl_star
   {lts₁ lts₂ : LTS State Label}
   {φ : Formula Label}
-  (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by sorry
+  (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
+  induction φ
+  · rw [Valid.iff]
+    sorry
+
+
+
+
+
+
+
 
 
 end Cslib.Logic.ACTL
