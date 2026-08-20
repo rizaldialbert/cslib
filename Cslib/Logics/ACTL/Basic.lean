@@ -70,7 +70,7 @@ lemma Formula.not_def {φ : Formula Label} : φ.not = (¬φ) := rfl
 lemma Formula.bot_def : (⊥ : Formula Label) = .false := rfl
 
 @[grind =]
-lemma Formula.or_def {φ1 φ2 : Formula Label} : φ1.or φ2 = (φ1 ∨ φ2) := rfl
+lemma Formula.or_def {φ₁ φ₂ : Formula Label} : φ₁.or φ₂ = (φ₁ ∨ φ₂) := rfl
 
 @[grind =]
 lemma Formula.imp_def {φ₁ φ₂ : Formula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ ¬φ₂) := rfl
@@ -114,27 +114,37 @@ theorem Satisfies.and_iff :
     expose_names
     exact ⟨left, right⟩
 
-theorem Satisfies.not_iff :
-  ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by
-      constructor
-      · intro h
-        exact h
-      · intro h
-        exact Not.imp h id
+@[grind =]
+theorem Satisfies.not_iff : ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by rfl
 
+@[grind =]
 theorem Satisfies.or_iff {φ₁ φ₂ : Formula Label} :
-    Satisfies ρ (φ₁ ∨ φ₂) ↔ (Satisfies ρ φ₁ ∨ Satisfies ρ φ₂) := by 
-      constructor
-      · intro h
-        exact or_iff_not_and_not.mpr h
-      · intro h
-        exact or_iff_not_and_not.mp h
+    Satisfies ρ (φ₁ ∨ φ₂) ↔ (Satisfies ρ φ₁ ∨ Satisfies ρ φ₂) := or_iff_not_and_not.symm
+
+@[grind =]
+theorem Satisfies.till_iff {φ₁ φ₂ : Formula Label} :
+    Satisfies ρ (φ₁.till φ₂)
+      ↔ ∃ i : ℕ, Satisfies (ρ.drop i) φ₂ ∧ (∀ j < i, Satisfies (ρ.drop j) φ₁) := by rfl
+
+theorem Satisfies.exist_iff {φ : Formula Label} {a : Label} :
+    Satisfies ρ (φ.exist)
+      ↔ ∃ ss' μs', ∃ θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ := by rfl
+
+@[grind =]
+theorem Satisfies.next_iff {φ : Formula Label} {a : Label} :
+    Satisfies ρ (φ.next_act a) ↔ (μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
+
+@[grind =]
+theorem Satisfies.next_act_iff {φ : Formula Label} {a : Label} :
+    Satisfies ρ (φ.next_act a) ↔ (μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
 
 end Satisfies
 
+@[grind =]
 def Valid (lts : LTS State Label) (φ : Formula Label) : Prop :=
   ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ
 
+@[grind =]
 lemma Valid.iff :
   Valid lts φ ↔ ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ := by rfl
 
@@ -143,8 +153,8 @@ lemma bisimulation_preserves_actl_star
   {φ : Formula Label}
   (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
   induction φ
-  · sorry
-  · sorry
+  · grind only [= Valid.iff, Satisfies]
+  · grind only [= Valid.iff, Satisfies]
   · sorry
   · sorry
   · sorry
