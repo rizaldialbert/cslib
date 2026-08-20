@@ -50,7 +50,7 @@ def Formula.finally (φ : Formula Label) : Formula Label := (.till .true φ)
 def Formula.globally (φ : Formula Label) : Formula Label := ¬.finally (¬φ)
 
 @[match_pattern]
-def Formula.imp (φ₁ φ₂ : Formula Label) : Formula Label := (¬φ₁ ∨ ¬φ₂)
+def Formula.imp (φ₁ φ₂ : Formula Label) : Formula Label := (¬φ₁ ∨ φ₂)
 
 instance : HasImp (Formula Label) := ⟨.imp⟩
 instance : HasDiamond (Formula Label) := ⟨.finally⟩
@@ -73,14 +73,13 @@ lemma Formula.bot_def : (⊥ : Formula Label) = .false := rfl
 lemma Formula.or_def {φ₁ φ₂ : Formula Label} : φ₁.or φ₂ = (φ₁ ∨ φ₂) := rfl
 
 @[grind =]
-lemma Formula.imp_def {φ₁ φ₂ : Formula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ ¬φ₂) := rfl
+lemma Formula.imp_def {φ₁ φ₂ : Formula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ φ₂) := rfl
 
 @[grind =]
 lemma Formula.diamond_def {φ : Formula Label} : Formula.finally φ = (◇φ) := rfl
 
 @[grind =]
 lemma Formula.box_def {φ : Formula Label} : Formula.globally φ = (□φ) := rfl
-
 
 /-- TODO -/
 @[grind =]
@@ -90,7 +89,7 @@ def Satisfies {lts : LTS State Label}
   | .true => True
   | .and φ φ' => Satisfies ρ φ ∧ Satisfies ρ φ'
   | .not φ => ¬(Satisfies ρ φ)
-  | .exist φ => ∃ ss' μs', ∃ θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ
+  | .exist φ => ∃ ss' μs', ∃θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ
   | .till φ φ' => ∃ i : ℕ, Satisfies (ρ.drop i) φ' ∧ (∀ j < i, Satisfies (ρ.drop j) φ)
   | .next φ => Satisfies (ρ.drop 1) φ
   | .next_act a φ => μs 0 = a ∧ Satisfies (ρ.drop 1) φ
@@ -105,6 +104,13 @@ variable {State Label}
 theorem Satisfies.true :
   Satisfies ρ Formula.true := trivial
 
+<<<<<<< HEAD
+=======
+theorem Satisfies.drop_all :
+  ∀(θ : OmegaExecution lts ss μs), Satisfies θ Formula.true := by
+  tauto
+
+>>>>>>> 2b76f9a (Add theorems for validating the semantics of imp, forall, diamond, and box)
 @[grind =]
 theorem Satisfies.and_iff :
   Satisfies ρ φ₁ ∧ Satisfies ρ φ₂ ↔ Satisfies ρ (φ₁ ∧ φ₂) := by rfl
@@ -123,7 +129,13 @@ theorem Satisfies.till_iff {φ₁ φ₂ : Formula Label} :
 
 theorem Satisfies.exist_iff {φ : Formula Label} :
     Satisfies ρ (φ.exist)
-      ↔ ∃ ss' μs', ∃ θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ := by rfl
+      ↔ ∃ ss' μs', ∃θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ := by rfl
+
+theorem Satisfies.exist_if {φ : Formula Label} (θ : OmegaExecution lts ss' μs') (h : ss' 0 = ss 0) :
+  Satisfies θ φ →  Satisfies ρ (φ.exist) := by
+  rw [Satisfies]
+  intro h_sat
+  use ss', μs', θ
 
 @[grind =]
 theorem Satisfies.next_iff {φ : Formula Label} {a : Label} :
@@ -132,6 +144,26 @@ theorem Satisfies.next_iff {φ : Formula Label} {a : Label} :
 @[grind =]
 theorem Satisfies.next_act_iff {φ : Formula Label} {a : Label} :
     Satisfies ρ (φ.next_act a) ↔ (μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
+
+@[grind =]
+theorem Satisfies.imp_iff {φ₁ φ₂: Formula Label} :
+  Satisfies ρ (φ₁.imp φ₂) ↔ (Satisfies ρ φ₁ → Satisfies ρ φ₂) := by
+  grind
+
+theorem Satisfies.forall_iff :
+  Satisfies ρ (.forall φ) ↔ (∀ ss' μs', ∀θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 → Satisfies θ φ) := by
+  rw [Formula.forall, ← Satisfies.not_iff, not_iff_comm, Satisfies.exist_iff]
+  push Not
+  tauto
+
+theorem Satisfies.diamond_iff :
+  Satisfies ρ (◇φ) ↔ ∃ i : ℕ, Satisfies (ρ.drop i) φ := by
+  simp [← Formula.diamond_def, Formula.finally, Satisfies.till_iff, Satisfies.drop_all]
+
+theorem Satisfies.box_iff :
+  Satisfies ρ (□φ) ↔ ∀ i : ℕ, Satisfies (ρ.drop i) φ := by
+  simp [← Formula.box_def, Formula.globally,
+Formula.finally, ← Satisfies.not_iff, Satisfies.till_iff, Satisfies.drop_all, ← Satisfies.not_iff]
 
 end Satisfies
 
