@@ -66,4 +66,13 @@ def Satisfies {lts : LTS State Label}
   | .next φ => Satisfies (ρ.drop 1) φ
   | .next_act a φ => μs 0 = a ∧ Satisfies (ρ.drop 1) φ
 
+def Valid (lts : LTS State Label) (φ : Formula Label) : Prop :=
+  ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ
+
+lemma bisimulation_preserves_actl_star
+  {lts₁ lts₂ : LTS State Label}
+  {φ : Formula Label}
+  (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by sorry
+
+
 end Cslib.Logic.ACTL
