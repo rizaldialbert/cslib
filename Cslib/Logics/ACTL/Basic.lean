@@ -31,33 +31,59 @@ instance : HasNot (Formula Label) := ⟨.not⟩
 
 /-- Other logical connectives / operators derived from primitive operators -/
 
+@[match_pattern]
 def Formula.false : Formula Label := ¬⊤
 
-instance : Bot (Formula Label) := ⟨.false⟩
-
+@[match_pattern]
 def Formula.or (φ₁ φ₂ : Formula Label) : Formula Label := ¬(¬φ₁ ∧ ¬φ₂)
 
+instance : Bot (Formula Label) := ⟨.false⟩
 instance : HasOr (Formula Label) := ⟨.or⟩
 
-lemma Formula.or_eq {φ1 φ2 : Formula Label} :
-  (φ1 ∨ φ2) = Formula.or φ1 φ2 := rfl
+@[match_pattern]
+def Formula.forall (φ : Formula Label) : Formula Label := ¬(.exist (¬φ))
 
+@[match_pattern]
+def Formula.finally (φ : Formula Label) : Formula Label := (.till .true φ)
+
+@[match_pattern]
+def Formula.globally (φ : Formula Label) : Formula Label := ¬.finally (¬φ)
+
+@[match_pattern]
 def Formula.imp (φ₁ φ₂ : Formula Label) : Formula Label := (¬φ₁ ∨ ¬φ₂)
 
 instance : HasImp (Formula Label) := ⟨.imp⟩
-
-def Formula.forall (φ : Formula Label) : Formula Label :=
-  ¬ (.exist (.not φ))
-
-def Formula.finally : Formula Label → Formula Label :=
-  (.till .true · )
-
 instance : HasDiamond (Formula Label) := ⟨.finally⟩
+instance : HasBox (Formula Label) := ⟨.globally⟩
 
--- def Formula.globally (φ : Formula Label) : Formula Label :=
+-- TODO Symmetrize equalities
+@[grind =]
+lemma Formula.top_def : (⊤ : Formula Label) = .true := rfl
+
+@[grind =]
+lemma Formula.and_def {φ₁ φ₂ : Formula Label} : φ₁.and φ₂ = (φ₁ ∧ φ₂) := rfl
+
+@[grind =]
+lemma Formula.not_def {φ : Formula Label} : φ.not = (¬φ) := rfl
+
+@[grind =]
+lemma Formula.bot_def : (⊥ : Formula Label) = .false := rfl
+
+@[grind =]
+lemma Formula.or_def {φ1 φ2 : Formula Label} : φ1.or φ2 = (φ1 ∨ φ2) := rfl
+
+@[grind =]
+lemma Formula.imp_def {φ₁ φ₂ : Formula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ ¬φ₂) := rfl
+
+@[grind =]
+lemma Formula.diamond_def {φ : Formula Label} : Formula.finally φ = (◇φ) := rfl
+
+@[grind =]
+lemma Formula.box_def {φ : Formula Label} : Formula.globally φ = (□φ) := rfl
 
 
 /-- TODO -/
+@[grind =]
 def Satisfies {lts : LTS State Label}
   {ss : ωSequence State} {μs : ωSequence Label}
   (ρ : OmegaExecution lts ss μs) : Formula Label -> Prop
@@ -71,7 +97,10 @@ def Satisfies {lts : LTS State Label}
 
 section Satisfies
 
-variable {ss : ωSequence State} {μs : ωSequence Label} {lts : LTS State Label} {ρ : OmegaExecution lts ss μs}
+variable {State Label}
+  {ss : ωSequence State} {μs : ωSequence Label}
+  {lts : LTS State Label}
+  {ρ : OmegaExecution lts ss μs}
 
 theorem Satisfies.true :
   Satisfies ρ Formula.true := trivial
@@ -82,15 +111,26 @@ theorem Satisfies.and_iff :
   · tauto
   · intro h
     induction h
-    (expose_names; exact ⟨left, right⟩)
+    expose_names
+    exact ⟨left, right⟩
 
 theorem Satisfies.not_iff :
-  ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by tauto
+  ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by
+      constructor
+      · intro h
+        exact h
+      · intro h
+        exact Not.imp h id
 
-theorem Satisfies.or (h : Satisfies ρ φ₁ ∨  Satisfies ρ φ₂):
-  Satisfies ρ (φ₁ ∨  φ₂) := by
-  rw [or_eq, Formula.or, ← Satisfies.not_iff, ← Satisfies.and_iff]
-  tauto
+theorem Satisfies.or_iff {φ₁ φ₂ : Formula Label} :
+    Satisfies ρ (φ₁ ∨ φ₂) ↔ (Satisfies ρ φ₁ ∨ Satisfies ρ φ₂) := by 
+      constructor
+      · intro h
+        exact or_iff_not_and_not.mpr h
+      · intro h
+        exact or_iff_not_and_not.mp h
+
+end Satisfies
 
 def Valid (lts : LTS State Label) (φ : Formula Label) : Prop :=
   ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ
@@ -103,15 +143,12 @@ lemma bisimulation_preserves_actl_star
   {φ : Formula Label}
   (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
   induction φ
-  · rw [Valid.iff]
-    sorry
-
-
-
-
-
-
-
-
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  · sorry
 
 end Cslib.Logic.ACTL
