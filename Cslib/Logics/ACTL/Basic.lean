@@ -105,14 +105,9 @@ variable {State Label}
 theorem Satisfies.true :
   Satisfies ρ Formula.true := trivial
 
+@[grind =]
 theorem Satisfies.and_iff :
-  Satisfies ρ φ₁ ∧ Satisfies ρ φ₂ ↔ Satisfies ρ (φ₁ ∧ φ₂) := by
-  constructor
-  · tauto
-  · intro h
-    induction h
-    expose_names
-    exact ⟨left, right⟩
+  Satisfies ρ φ₁ ∧ Satisfies ρ φ₂ ↔ Satisfies ρ (φ₁ ∧ φ₂) := by rfl
 
 @[grind =]
 theorem Satisfies.not_iff : ¬ (Satisfies ρ φ) ↔ Satisfies ρ (¬ φ) := by rfl
@@ -126,7 +121,7 @@ theorem Satisfies.till_iff {φ₁ φ₂ : Formula Label} :
     Satisfies ρ (φ₁.till φ₂)
       ↔ ∃ i : ℕ, Satisfies (ρ.drop i) φ₂ ∧ (∀ j < i, Satisfies (ρ.drop j) φ₁) := by rfl
 
-theorem Satisfies.exist_iff {φ : Formula Label} {a : Label} :
+theorem Satisfies.exist_iff {φ : Formula Label} :
     Satisfies ρ (φ.exist)
       ↔ ∃ ss' μs', ∃ θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ := by rfl
 
