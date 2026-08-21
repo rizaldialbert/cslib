@@ -1,3 +1,5 @@
+import Mathlib
+
 import Cslib.Foundations.Semantics.LTS.Bisimulation
 import Cslib.Foundations.Semantics.LTS.OmegaExecution
 import Cslib.Foundations.Logic.Operators
@@ -81,31 +83,43 @@ lemma Formula.diamond_def {φ : Formula Label} : Formula.finally φ = (◇φ) :=
 @[grind =]
 lemma Formula.box_def {φ : Formula Label} : Formula.globally φ = (□φ) := rfl
 
+structure Run (lts : LTS State Label) where
+  ss : ωSequence State
+  μs : ωSequence Label
+  exec : OmegaExecution lts ss μs
+
+/-- Dropping steps from the execution. -/
+def Run.drop {lts : LTS State Label} (i : ℕ) (ρ : Run lts) : Run lts where
+  ss := ωSequence.drop i ρ.ss
+  μs := ωSequence.drop i ρ.μs
+  exec := by
+    intro n
+    simp only [get_drop]
+    rw [← add_assoc i n 1]
+    exact ρ.exec (i + n)
+
 /-- TODO -/
 @[grind =]
-def Satisfies {lts : LTS State Label}
-  {ss : ωSequence State} {μs : ωSequence Label}
-  (ρ : OmegaExecution lts ss μs) : Formula Label -> Prop
+def Satisfies {lts : LTS State Label} (ρ : Run lts) : Formula Label -> Prop
   | .true => True
   | .and φ φ' => Satisfies ρ φ ∧ Satisfies ρ φ'
   | .not φ => ¬(Satisfies ρ φ)
-  | .exist φ => ∃ ss' μs', ∃θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ
+  | .exist φ => ∃θ : Run lts, θ.ss 0 = ρ.ss 0 ∧ Satisfies θ φ
   | .till φ φ' => ∃ i : ℕ, Satisfies (ρ.drop i) φ' ∧ (∀ j < i, Satisfies (ρ.drop j) φ)
   | .next φ => Satisfies (ρ.drop 1) φ
-  | .next_act a φ => μs 0 = a ∧ Satisfies (ρ.drop 1) φ
+  | .next_act a φ => ρ.μs 0 = a ∧ Satisfies (ρ.drop 1) φ
 
 section Satisfies
 
 variable {State Label}
-  {ss : ωSequence State} {μs : ωSequence Label}
   {lts : LTS State Label}
-  {ρ : OmegaExecution lts ss μs}
+  {ρ : Run lts}
 
 theorem Satisfies.true :
   Satisfies ρ Formula.true := trivial
 
 theorem Satisfies.drop_all :
-  ∀(θ : OmegaExecution lts ss μs), Satisfies θ Formula.true := by
+  ∀(θ : Run lts), Satisfies θ Formula.true := by
   tauto
 
 @[grind =]
@@ -125,30 +139,28 @@ theorem Satisfies.till_iff {φ₁ φ₂ : Formula Label} :
       ↔ ∃ i : ℕ, Satisfies (ρ.drop i) φ₂ ∧ (∀ j < i, Satisfies (ρ.drop j) φ₁) := by rfl
 
 theorem Satisfies.exist_iff {φ : Formula Label} :
-    Satisfies ρ (φ.exist)
-      ↔ ∃ ss' μs', ∃θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 ∧ Satisfies θ φ := by rfl
+    Satisfies ρ (φ.exist) ↔ ∃θ : Run lts, θ.ss 0 = ρ.ss 0 ∧ Satisfies θ φ := by rfl
 
-theorem Satisfies.exist_if {φ : Formula Label} (θ : OmegaExecution lts ss' μs') (h : ss' 0 = ss 0) :
-  Satisfies θ φ →  Satisfies ρ (φ.exist) := by
+theorem Satisfies.exist_if {φ : Formula Label} (θ : Run lts) (h : θ.ss 0 = ρ.ss 0) :
+  Satisfies θ φ → Satisfies ρ (φ.exist) := by
   rw [Satisfies]
   intro h_sat
-  use ss', μs', θ
+  use θ
 
 @[grind =]
 theorem Satisfies.next_iff {φ : Formula Label} {a : Label} :
-    Satisfies ρ (φ.next_act a) ↔ (μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
+    Satisfies ρ (φ.next) ↔ (Satisfies (ρ.drop 1) φ) := by rfl
 
 @[grind =]
 theorem Satisfies.next_act_iff {φ : Formula Label} {a : Label} :
-    Satisfies ρ (φ.next_act a) ↔ (μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
+    Satisfies ρ (φ.next_act a) ↔ (ρ.μs 0 = a ∧ Satisfies (ρ.drop 1) φ) := by rfl
 
 @[grind =]
-theorem Satisfies.imp_iff {φ₁ φ₂: Formula Label} :
-  Satisfies ρ (φ₁.imp φ₂) ↔ (Satisfies ρ φ₁ → Satisfies ρ φ₂) := by
-  grind
+theorem Satisfies.imp_iff {φ₁ φ₂ : Formula Label} :
+  Satisfies ρ (φ₁.imp φ₂) ↔ (Satisfies ρ φ₁ → Satisfies ρ φ₂) := by grind
 
 theorem Satisfies.forall_iff :
-  Satisfies ρ (.forall φ) ↔ (∀ ss' μs', ∀θ : OmegaExecution lts ss' μs', ss' 0 = ss 0 → Satisfies θ φ) := by
+  Satisfies ρ (.forall φ) ↔ (∀θ : Run lts, θ.ss 0 = ρ.ss 0 → Satisfies θ φ) := by
   rw [Formula.forall, ← Satisfies.not_iff, not_iff_comm, Satisfies.exist_iff]
   push Not
   tauto
@@ -164,13 +176,21 @@ Formula.finally, ← Satisfies.not_iff, Satisfies.till_iff, Satisfies.drop_all, 
 
 end Satisfies
 
-@[grind =]
-def Valid (lts : LTS State Label) (φ : Formula Label) : Prop :=
-  ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ
+structure Judgement State Label where
+  /-- Constructs a judgement. -/
+  mk ::
+  /-- LTS. -/
+  lts : LTS State Label
+  /-- The run satisfying the proposition `φ`. -/
+  run : Run lts
+  /-- The proposition satisfied by the state `s`. -/
+  φ : Formula Label
 
 @[grind =]
-lemma Valid.iff :
-  Valid lts φ ↔ ∀ ss μs , ∀ρ : OmegaExecution lts ss μs , Satisfies ρ φ := by rfl
+def Valid (lts : LTS State Label) (φ : Formula Label) : Prop := ∀ρ : Run lts, Satisfies ρ φ
+
+@[grind =]
+lemma Valid.iff : Valid lts φ ↔ ∀ρ : Run lts, Satisfies ρ φ := by rfl
 
 lemma bisimulation_preserves_actl_star
   {lts₁ lts₂ : LTS State Label}
@@ -178,7 +198,7 @@ lemma bisimulation_preserves_actl_star
   (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
   induction φ with
   | true => grind only [= Valid.iff, Satisfies]
-  | and φ1 φ2 => grind only [= Valid.iff, Satisfies]
+  | and φ1 φ2 => sorry
   | not φ ih => sorry
   | exist φ ih => sorry
   | till φ₁ φ₂ ih => sorry

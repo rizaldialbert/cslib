@@ -117,10 +117,4 @@ theorem OmegaExecution.flatten_mTr [Inhabited Label]
     List.length_pos_iff.mpr this
   grind [List.getElem_of_eq (h_seg k) h1]
 
-/-- Dropping steps from the execution. -/
-theorem OmegaExecution.drop (ρ : OmegaExecution lts ss μs) (i : ℕ)
-  : OmegaExecution lts (drop i ss) (drop i μs) := by
-    intro n
-    induction n <;> grind
-
 end Cslib.LTS
