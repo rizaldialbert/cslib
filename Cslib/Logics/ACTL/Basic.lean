@@ -104,13 +104,10 @@ variable {State Label}
 theorem Satisfies.true :
   Satisfies ρ Formula.true := trivial
 
-<<<<<<< HEAD
-=======
 theorem Satisfies.drop_all :
   ∀(θ : OmegaExecution lts ss μs), Satisfies θ Formula.true := by
   tauto
 
->>>>>>> 2b76f9a (Add theorems for validating the semantics of imp, forall, diamond, and box)
 @[grind =]
 theorem Satisfies.and_iff :
   Satisfies ρ φ₁ ∧ Satisfies ρ φ₂ ↔ Satisfies ρ (φ₁ ∧ φ₂) := by rfl
