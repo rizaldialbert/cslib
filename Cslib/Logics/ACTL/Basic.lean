@@ -192,17 +192,12 @@ def Valid (lts : LTS State Label) (φ : Formula Label) : Prop := ∀ρ : Run lts
 @[grind =]
 lemma Valid.iff : Valid lts φ ↔ ∀ρ : Run lts, Satisfies ρ φ := by rfl
 
-lemma bisimulation_preserves_actl_star
-  {lts₁ lts₂ : LTS State Label}
+lemma bismilarity_preserves_actl_star
+  {lts₁ : LTS State₁ Label} {lts₂ : LTS State₂ Label}
+  {s : State₁} {t : State₂}
   {φ : Formula Label}
-  (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
-  induction φ with
-  | true => grind only [= Valid.iff, Satisfies]
-  | and φ1 φ2 => sorry
-  | not φ ih => sorry
-  | exist φ ih => sorry
-  | till φ₁ φ₂ ih => sorry
-  | next φ ih => sorry
-  | next_act a φ ih => sorry
+  (h : s ~[lts₁,lts₂] t) -- Bisimilarity lts₁ lts₂ s₁ s₂
+  : ∀ (ρ : Run lts₁) (θ : Run lts₂), ((ρ.ss 0 = s) ∧ (θ.ss 0 = t)) → (Satisfies ρ φ ↔ Satisfies θ φ)
+    := sorry
 
 end Cslib.Logic.ACTL
