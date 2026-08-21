@@ -1,5 +1,3 @@
-import Mathlib
-
 import Cslib.Foundations.Semantics.LTS.Bisimulation
 import Cslib.Foundations.Semantics.LTS.OmegaExecution
 import Cslib.Foundations.Logic.Operators
@@ -10,78 +8,104 @@ namespace Cslib.Logic.ACTL
 open Cslib.LTS
 open ωSequence
 
+mutual
 /-- primitive logical operators -/
-inductive Formula (Label : Type u) : Type u where
+  inductive StateFormula (Label : Type u) : Type u where
   /-- Truth. -/
   | true
   /-- Conjunction. -/
-  | and (φ₁ φ₂ : Formula Label)
+  | and (Φ₁ Φ₂ : StateFormula Label)
   /-- Negation. -/
-  | not (φ : Formula Label)
+  | not (Φ  : StateFormula Label)
   /-- exists -/
-  | exist (φ : Formula Label)
-  /-- until -/
-  | till (φ₁ φ₂ : Formula Label)
-  /-- next -/
-  | next (φ : Formula Label)
-  /-- next witha action label -/
-  | next_act (a : Label) (φ : Formula Label)
+  | exist (φ : PathFormula Label)
 
-instance : Top (Formula Label) := ⟨.true⟩
-instance : HasAnd (Formula Label) := ⟨.and⟩
-instance : HasNot (Formula Label) := ⟨.not⟩
+  inductive PathFormula (Label : Type u) : Type u
+  | st (Φ : StateFormula Label)
+  /-- until -/
+  | till (Φ₁ Φ₂ : PathFormula Label)
+  /-- next -/
+  | next (Φ : PathFormula Label)
+  /-- next with action label -/
+  | next_act (a : Label) (Φ : PathFormula Label)
+  /-- path and -/
+  | and (Φ₁ Φ₂ : PathFormula Label)
+  /-- path not -/
+  | not (Φ : PathFormula Label)
+end
+
+instance : Top (StateFormula Label) := ⟨.true⟩
+instance : HasAnd (StateFormula Label) := ⟨.and⟩
+instance : HasNot (StateFormula Label) := ⟨.not⟩
+
+instance : HasAnd (PathFormula Label) := ⟨.and⟩
+instance : HasNot (PathFormula Label) := ⟨.not⟩
 
 /-- Other logical connectives / operators derived from primitive operators -/
 
 @[match_pattern]
-def Formula.false : Formula Label := ¬⊤
+def StateFormula.false : StateFormula Label := ¬⊤
 
 @[match_pattern]
-def Formula.or (φ₁ φ₂ : Formula Label) : Formula Label := ¬(¬φ₁ ∧ ¬φ₂)
+def StateFormula.or (Φ₁ Φ₂ : StateFormula Label) : StateFormula Label := ¬(¬Φ₁ ∧ ¬Φ₂)
 
-instance : Bot (Formula Label) := ⟨.false⟩
-instance : HasOr (Formula Label) := ⟨.or⟩
+def PathFormula.or (φ₁ φ₂ : PathFormula Label) : PathFormula Label := ¬ (¬φ₁ ∧ ¬φ₂)
 
-@[match_pattern]
-def Formula.forall (φ : Formula Label) : Formula Label := ¬(.exist (¬φ))
-
-@[match_pattern]
-def Formula.finally (φ : Formula Label) : Formula Label := (.till .true φ)
+instance : Bot (StateFormula Label) := ⟨.false⟩
+instance : HasOr (StateFormula Label) := ⟨.or⟩
+instance : HasOr (PathFormula Label) := ⟨.or⟩
 
 @[match_pattern]
-def Formula.globally (φ : Formula Label) : Formula Label := ¬.finally (¬φ)
+def StateFormula.forall (φ : PathFormula Label) : StateFormula Label := ¬(.exist (¬φ))
+
+def PathFormula.true : PathFormula Label := .st .true
 
 @[match_pattern]
-def Formula.imp (φ₁ φ₂ : Formula Label) : Formula Label := (¬φ₁ ∨ φ₂)
+def PathFormula.finally (φ : PathFormula Label) : PathFormula Label := (.till .true φ)
 
-instance : HasImp (Formula Label) := ⟨.imp⟩
-instance : HasDiamond (Formula Label) := ⟨.finally⟩
-instance : HasBox (Formula Label) := ⟨.globally⟩
+@[match_pattern]
+def PathFormula.globally (φ : PathFormula Label) : PathFormula Label := ¬.finally (¬φ)
+
+@[match_pattern]
+def StateFormula.imp (Φ₁ Φ₂ : StateFormula Label) : StateFormula Label := (¬Φ₁ ∨ Φ₂)
+
+def PathFormula.imp (φ₁ φ₂ : PathFormula Label) : PathFormula Label := (¬ φ₁ ∨ φ₂)
+
+instance : HasImp (StateFormula Label) := ⟨.imp⟩
+instance : HasImp (PathFormula Label) := ⟨.imp⟩
+instance : HasDiamond (PathFormula Label) := ⟨.finally⟩
+instance : HasBox (PathFormula Label) := ⟨.globally⟩
 
 -- TODO Symmetrize equalities
 @[grind =]
-lemma Formula.top_def : (⊤ : Formula Label) = .true := rfl
+lemma StateFormula.top_def : (⊤ : StateFormula Label) = .true := rfl
 
 @[grind =]
-lemma Formula.and_def {φ₁ φ₂ : Formula Label} : φ₁.and φ₂ = (φ₁ ∧ φ₂) := rfl
+lemma StateFormula.and_def {Φ₁ Φ₂ : StateFormula Label} : Φ₁.and Φ₂ = (Φ₁ ∧ Φ₂) := rfl
+
+lemma PathFormula.and_def {φ₁ φ₂ : PathFormula Label} : φ₁.and φ₂ = (φ₁ ∧ φ₂) := rfl
 
 @[grind =]
-lemma Formula.not_def {φ : Formula Label} : φ.not = (¬φ) := rfl
+lemma StateFormula.not_def {Φ : StateFormula Label} : Φ.not = (¬Φ) := rfl
+
+lemma PathFormula.not_def {φ : PathFormula Label} : φ.not = (¬φ) := rfl
 
 @[grind =]
-lemma Formula.bot_def : (⊥ : Formula Label) = .false := rfl
+lemma StateFormula.bot_def : (⊥ : StateFormula Label) = .false := rfl
 
 @[grind =]
-lemma Formula.or_def {φ₁ φ₂ : Formula Label} : φ₁.or φ₂ = (φ₁ ∨ φ₂) := rfl
+lemma StateFormula.or_def {φ₁ φ₂ : StateFormula Label} : φ₁.or φ₂ = (φ₁ ∨ φ₂) := rfl
 
 @[grind =]
-lemma Formula.imp_def {φ₁ φ₂ : Formula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ φ₂) := rfl
+lemma StateFormula.imp_def {Φ₁ Φ₂ : StateFormula Label} : Φ₁.imp Φ₂  = (¬Φ₁ ∨ Φ₂) := rfl
+
+lemma PathFormula.imp_def {φ₁ φ₂ : StateFormula Label} : φ₁.imp φ₂  = (¬φ₁ ∨ φ₂) := rfl
 
 @[grind =]
-lemma Formula.diamond_def {φ : Formula Label} : Formula.finally φ = (◇φ) := rfl
+lemma PathFormula.diamond_def {φ : PathFormula Label} : PathFormula.finally φ = (◇φ) := rfl
 
 @[grind =]
-lemma Formula.box_def {φ : Formula Label} : Formula.globally φ = (□φ) := rfl
+lemma PathFormula.box_def {φ : PathFormula Label} : PathFormula.globally φ = (□φ) := rfl
 
 structure Run (lts : LTS State Label) where
   ss : ωSequence State
@@ -98,16 +122,24 @@ def Run.drop {lts : LTS State Label} (i : ℕ) (ρ : Run lts) : Run lts where
     rw [← add_assoc i n 1]
     exact ρ.exec (i + n)
 
-/-- TODO -/
-@[grind =]
-def Satisfies {lts : LTS State Label} (ρ : Run lts) : Formula Label -> Prop
+mutual
+  def SatisfiesState (lts : LTS State Label) (s : State) : StateFormula Label -> Prop
   | .true => True
-  | .and φ φ' => Satisfies ρ φ ∧ Satisfies ρ φ'
-  | .not φ => ¬(Satisfies ρ φ)
-  | .exist φ => ∃θ : Run lts, θ.ss 0 = ρ.ss 0 ∧ Satisfies θ φ
-  | .till φ φ' => ∃ i : ℕ, Satisfies (ρ.drop i) φ' ∧ (∀ j < i, Satisfies (ρ.drop j) φ)
-  | .next φ => Satisfies (ρ.drop 1) φ
-  | .next_act a φ => ρ.μs 0 = a ∧ Satisfies (ρ.drop 1) φ
+  | .and Φ Φ' => SatisfiesState lts s Φ ∧ SatisfiesState lts s Φ'
+  | .not Φ => ¬(SatisfiesState lts s Φ)
+  | .exist φ => ∃θ : Run lts, θ.ss 0 = s ∧ SatisfiesPath θ φ
+
+  def SatisfiesPath {lts : LTS State Label} (θ : Run lts) : PathFormula Label -> Prop
+  | .st Φ => SatisfiesState lts (θ.ss 0) Φ
+  | .till φ₁ φ₂ =>
+      ∃j : ℕ  , 0 ≤ j
+              ∧ SatisfiesPath (θ.drop j) φ₂
+              ∧ (∀k, 0 ≤ k ∧ k < j → SatisfiesPath (θ.drop k) φ₁)
+  | .next φ => SatisfiesPath (θ.drop 1) φ
+  | .next_act a φ => (θ.μs 0 = a) ∧ SatisfiesPath (θ.drop 1) φ
+  | .and φ₁ φ₂ => SatisfiesPath θ φ₁ ∧ SatisfiesPath θ φ₂
+  | .not φ => ¬ SatisfiesPath θ φ
+end
 
 section Satisfies
 
