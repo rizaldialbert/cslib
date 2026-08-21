@@ -176,13 +176,13 @@ lemma bisimulation_preserves_actl_star
   {lts₁ lts₂ : LTS State Label}
   {φ : Formula Label}
   (h0 : IsBisimulation lts₁ lts₂ R) : Valid lts₁ φ ↔ Valid lts₂ φ := by
-  induction φ
-  · grind only [= Valid.iff, Satisfies]
-  · grind only [= Valid.iff, Satisfies]
-  · sorry
-  · sorry
-  · sorry
-  · sorry
-  · sorry
+  induction φ with
+  | true => grind only [= Valid.iff, Satisfies]
+  | and φ1 φ2 => grind only [= Valid.iff, Satisfies]
+  | not φ ih => sorry
+  | exist φ ih => sorry
+  | till φ₁ φ₂ ih => sorry
+  | next φ ih => sorry
+  | next_act a φ ih => sorry
 
 end Cslib.Logic.ACTL
